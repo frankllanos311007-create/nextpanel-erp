@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — NextPanel</title>
+    <meta name="description" content="Panel principal del sistema ERP NextPanel. Estadísticas del día y resumen de operaciones.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="../public/assets/global.css">
+</head>
+
+<body>
+    <div class="app-layout">
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">⚡</div>
+                <span>NextPanel</span>
+            </div>
+
+            <span class="nav-section-label">Principal</span>
+            <a href="./dashboard.html" class="nav-link active" id="nav-dashboard">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+
+            <span class="nav-section-label">Gestión</span>
+            <a href="./inventario.html" class="nav-link" id="nav-inventario">
+                <i class="fa-solid fa-boxes-stacked"></i> Inventario
+            </a>
+            <a href="./ventas.html" class="nav-link" id="nav-ventas">
+                <i class="fa-solid fa-cash-register"></i> Ventas
+            </a>
+
+            <span class="nav-section-label">Sistema</span>
+            <a href="#" class="nav-link" id="nav-sesiones" onclick="abrirModalSesiones()">
+                <i class="fa-solid fa-key"></i> Códigos de Acceso
+            </a>
+
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <div class="avatar" id="user-avatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="user-name">Admin</div>
+                        <div class="user-role">Administrador</div>
+                    </div>
+                    <button class="btn btn-sm" onclick="Auth.cerrarSesion()" title="Cerrar sesión"
+                        style="background:none;border:none;color:var(--text-muted);">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===== Topbar ===== -->
+        <header class="topbar">
+            <span class="topbar-title">
+                <i class="fa-solid fa-chart-line" style="color:var(--color-primary)"></i>
+                Dashboard
+            </span>
+            <div class="topbar-actions">
+                <span id="top-fecha" class="text-sm text-muted"></span>
+                <button class="btn btn-secondary btn-sm" onclick="cargarDashboard()">
+                    <i class="fa-solid fa-rotate-right"></i> Actualizar
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== Contenido Principal ===== -->
+        <main class="main-content">
+
+            <!-- Stat Cards -->
+            <div class="stat-grid" id="stat-grid">
+                <div class="stat-card" data-accent="success">
+                    <div class="stat-icon" style="background:rgba(34,211,165,0.1)">
+                        <i class="fa-solid fa-dollar-sign" style="color:var(--color-success)"></i>
+                    </div>
+                    <div class="stat-value" id="stat-total">$0.00</div>
+                    <div class="stat-label">Total Vendido Hoy</div>
+                </div>
+                <div class="stat-card" data-accent="info">
+                    <div class="stat-icon" style="background:rgba(56,189,248,0.1)">
+                        <i class="fa-solid fa-receipt" style="color:var(--color-info)"></i>
+                    </div>
+                    <div class="stat-value" id="stat-ventas">0</div>
+                    <div class="stat-label">Ventas del Día</div>
+                </div>
+                <div class="stat-card" data-accent="warning">
+                    <div class="stat-icon" style="background:rgba(245,158,11,0.1)">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:var(--color-warning)"></i>
+                    </div>
+                    <div class="stat-value" id="stat-alertas">0</div>
+                    <div class="stat-label">Alertas de Stock Bajo</div>
+                </div>
+                <div class="stat-card" data-accent="primary">
+                    <div class="stat-icon" style="background:rgba(108,99,255,0.1)">
+                        <i class="fa-solid fa-trophy" style="color:var(--color-primary)"></i>
+                    </div>
+                    <div class="stat-value" id="stat-top">—</div>
+                    <div class="stat-label">Producto #1 del Día</div>
+                </div>
+            </div>
+
+            <!-- Fila de tablas -->
+            <div class="section-grid" style="grid-template-columns: 1fr 1fr; gap: var(--gap-lg);">
+
+                <!-- Top Productos -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <i class="fa-solid fa-fire" style="color:var(--color-warning)"></i>
+                            Más Vendidos Hoy
+                        </span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th>Unidades</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-top-productos">
+                                <tr><td colspan="3" class="text-muted text-sm" style="padding:1.5rem;text-align:center">
+                                    Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Alertas de Stock -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <i class="fa-solid fa-boxes-stacked" style="color:var(--color-danger)"></i>
+                            Stock Bajo
+                        </span>
+                        <a href="./inventario.html" class="btn btn-secondary btn-sm">Ver todo</a>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Stock</th>
+                                    <th>Mínimo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-alertas-stock">
+                                <tr><td colspan="3" class="text-muted text-sm" style="padding:1.5rem;text-align:center">
+                                    Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ===== Modal: Códigos de Acceso ===== -->
+    <div class="modal-overlay" id="modal-sesiones">
+        <div class="modal" style="width: min(600px, 95vw);">
+            <div class="modal-header">
+                <span class="modal-title"><i class="fa-solid fa-key"></i> Códigos de Acceso para Vendedores</span>
+                <button class="modal-close" onclick="cerrarModal('modal-sesiones')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Generar nuevo código -->
+            <div style="display:flex;gap:var(--gap);align-items:flex-end;margin-bottom:var(--gap-lg);">
+                <div class="form-group" style="flex:1;margin:0">
+                    <label class="form-label">Duración del código (horas)</label>
+                    <input class="form-control" type="number" id="codigo-horas"
+                        value="8" min="1" max="72">
+                </div>
+                <button class="btn btn-primary" onclick="generarNuevoCodigo()">
+                    <i class="fa-solid fa-plus"></i> Generar Código
+                </button>
+            </div>
+
+            <!-- Código generado -->
+            <div id="nuevo-codigo-resultado" class="hidden alert alert-success" style="font-size:1.4rem;font-weight:800;letter-spacing:0.3em;text-align:center;font-family:var(--font-mono);">
+            </div>
+
+            <!-- Listado -->
+            <div class="table-wrapper mt">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Rol</th>
+                            <th>Expira</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-sesiones">
+                        <tr><td colspan="5" class="text-muted" style="padding:1rem;text-align:center">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // ============================================================
+        // dashboard.js — Lógica del dashboard
+        // ============================================================
+
+        // Verificar sesión de admin
+        const sesion = Auth.requerirSesion(['admin']);
+
+        // Mostrar info del usuario
+        if (sesion) {
+            const email = sesion.user?.email || sesion.email || 'Admin';
+            document.getElementById('user-name').textContent = email.split('@')[0];
+            document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+        }
+
+        // Fecha actual en topbar
+        document.getElementById('top-fecha').textContent =
+            new Intl.DateTimeFormat('es', { dateStyle: 'full' }).format(new Date());
+
+        // ---- Cargar estadísticas ----
+        async function cargarDashboard() {
+            try {
+                const { resumen } = await API.obtenerDashboard();
+
+                // Stats
+                document.getElementById('stat-total').textContent =
+                    Auth.formatearMoneda(resumen.total_dia);
+                document.getElementById('stat-ventas').textContent =
+                    resumen.cantidad_ventas;
+                document.getElementById('stat-alertas').textContent =
+                    resumen.alertas_stock.length;
+                document.getElementById('stat-top').textContent =
+                    resumen.top_productos[0]?.nombre || '—';
+
+                // Tabla top productos
+                const tbTop = document.getElementById('tabla-top-productos');
+                if (resumen.top_productos.length === 0) {
+                    tbTop.innerHTML = `<tr><td colspan="3" class="text-muted text-sm" style="padding:1.5rem;text-align:center">Sin ventas hoy</td></tr>`;
+                } else {
+                    tbTop.innerHTML = resumen.top_productos.map((p, i) => `
+                        <tr>
+                            <td><span class="badge badge-primary">${i + 1}</span></td>
+                            <td>${p.nombre}</td>
+                            <td><strong>${p.total_vendido}</strong> uds.</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Tabla alertas stock
+                const tbAlerta = document.getElementById('tabla-alertas-stock');
+                if (resumen.alertas_stock.length === 0) {
+                    tbAlerta.innerHTML = `<tr><td colspan="3" class="text-success text-sm" style="padding:1.5rem;text-align:center"><i class="fa-solid fa-check-circle"></i> Todo en orden</td></tr>`;
+                } else {
+                    tbAlerta.innerHTML = resumen.alertas_stock.map(p => `
+                        <tr>
+                            <td>${p.nombre}</td>
+                            <td><span class="badge badge-danger">${p.stock}</span></td>
+                            <td class="text-muted">${p.stock_minimo}</td>
+                        </tr>
+                    `).join('');
+                }
+
+            } catch (err) {
+                Auth.mostrarToast('Error al cargar estadísticas: ' + err.message, 'error');
+            }
+        }
+
+        // ---- Modal de sesiones ----
+        function abrirModalSesiones(e) {
+            if (e) e.preventDefault();
+            document.getElementById('modal-sesiones').classList.add('open');
+            cargarSesiones();
+        }
+
+        function cerrarModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        async function cargarSesiones() {
+            const tbody = document.getElementById('tabla-sesiones');
+            try {
+                const { sesiones } = await API.listarSesiones();
+                if (sesiones.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="padding:1rem;text-align:center">No hay códigos generados.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = sesiones.map(s => {
+                    const expirado  = new Date(s.expira_en) < new Date();
+                    const estadoBadge = !s.activo
+                        ? `<span class="badge badge-danger">Inactivo</span>`
+                        : expirado
+                            ? `<span class="badge badge-warning">Expirado</span>`
+                            : `<span class="badge badge-success">Activo</span>`;
+                    return `
+                        <tr>
+                            <td style="font-family:var(--font-mono);font-weight:700;letter-spacing:0.15em">${s.codigo}</td>
+                            <td><span class="badge badge-primary">${s.rol}</span></td>
+                            <td class="text-sm text-muted">${Auth.formatearFecha(s.expira_en)}</td>
+                            <td>${estadoBadge}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" onclick="toggleSesion('${s.id}')">
+                                    ${s.activo ? '<i class="fa-solid fa-toggle-on"></i>' : '<i class="fa-solid fa-toggle-off"></i>'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error al cargar sesiones.</td></tr>`;
+            }
+        }
+
+        async function generarNuevoCodigo() {
+            const horas = parseInt(document.getElementById('codigo-horas').value) || 8;
+            try {
+                const { codigo, expira_en } = await API.generarCodigo(horas);
+                const resultEl = document.getElementById('nuevo-codigo-resultado');
+                resultEl.textContent = codigo;
+                resultEl.classList.remove('hidden');
+                Auth.mostrarToast(`Código ${codigo} generado. Expira: ${Auth.formatearFecha(expira_en)}`, 'success');
+                cargarSesiones();
+            } catch (err) {
+                Auth.mostrarToast('Error al generar código: ' + err.message, 'error');
+            }
+        }
+
+        async function toggleSesion(id) {
+            try {
+                await API.toggleSesion(id);
+                await cargarSesiones();
+            } catch (err) {
+                Auth.mostrarToast('Error: ' + err.message, 'error');
+            }
+        }
+
+        // Cerrar modal al click afuera
+        document.getElementById('modal-sesiones').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal('modal-sesiones');
+        });
+
+        // Cargar al iniciar
+        cargarDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas — NextPanel</title>
+    <meta name="description" content="Punto de venta NextPanel. Registra ventas y descuenta stock automáticamente.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="../public/assets/global.css">
+    <style>
+        /* Estilos extra para el punto de venta */
+        .pos-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: var(--gap-lg);
+            height: calc(100vh - var(--topbar-h) - var(--gap-xl) * 2);
+        }
+
+        /* Catálogo de productos */
+        .catalogo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--gap);
+            overflow-y: auto;
+            max-height: 100%;
+            padding-right: var(--gap-xs);
+        }
+
+        .producto-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--gap);
+            cursor: pointer;
+            transition: all var(--t-normal);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap-sm);
+            text-align: center;
+        }
+
+        .producto-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 24px var(--color-primary-glow);
+        }
+
+        .producto-card.sin-stock {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .producto-card-icono {
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+
+        .producto-card-nombre {
+            font-size: 0.82rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .producto-card-precio {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--color-success);
+        }
+
+        .producto-card-stock {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Carrito */
+        .carrito-panel {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .carrito-header {
+            padding: var(--gap) var(--gap-lg);
+            border-bottom: 1px solid var(--color-border);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .carrito-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--gap-sm) 0;
+        }
+
+        .carrito-item {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-sm);
+            padding: var(--gap-sm) var(--gap-lg);
+            border-bottom: 1px solid var(--color-border);
+            transition: background var(--t-fast);
+        }
+
+        .carrito-item:hover { background: var(--color-surface-2); }
+        .carrito-item:last-child { border-bottom: none; }
+
+        .carrito-item-nombre {
+            flex: 1;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .carrito-item-qty {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-xs);
+        }
+
+        .qty-btn {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface-2);
+            color: var(--text-primary);
+            font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all var(--t-fast);
+        }
+
+        .qty-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        .carrito-item-subtotal {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--color-success);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .carrito-footer {
+            border-top: 1px solid var(--color-border);
+            padding: var(--gap-lg);
+        }
+
+        .carrito-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--gap);
+            font-size: 1.3rem;
+        }
+
+        .carrito-total .total-label { color: var(--text-secondary); font-weight: 600; }
+        .carrito-total .total-valor { font-weight: 800; color: var(--color-success); }
+
+        .carrito-vacio {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            gap: var(--gap-sm);
+        }
+
+        .carrito-vacio i { font-size: 3rem; opacity: 0.3; }
+    </style>
+</head>
+
+<body>
+    <div class="app-layout">
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">⚡</div>
+                <span>NextPanel</span>
+            </div>
+            <span class="nav-section-label">Principal</span>
+            <a href="./dashboard.html" class="nav-link" id="nav-dashboard-link">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+            <span class="nav-section-label">Gestión</span>
+            <a href="./inventario.html" class="nav-link" id="nav-inventario-link">
+                <i class="fa-solid fa-boxes-stacked"></i> Inventario
+            </a>
+            <a href="./ventas.html" class="nav-link active">
+                <i class="fa-solid fa-cash-register"></i> Ventas
+            </a>
+            <span class="nav-section-label">Historial</span>
+            <a href="#" class="nav-link" onclick="mostrarHistorial()">
+                <i class="fa-solid fa-clock-rotate-left"></i> Ver Historial
+            </a>
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <div class="avatar" id="user-avatar">V</div>
+                    <div class="user-info">
+                        <div class="user-name" id="user-name">Vendedor</div>
+                        <div class="user-role" id="user-role-label">Caja</div>
+                    </div>
+                    <button class="btn btn-sm" onclick="Auth.cerrarSesion()" title="Cerrar sesión"
+                        style="background:none;border:none;color:var(--text-muted);">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===== Topbar ===== -->
+        <header class="topbar">
+            <span class="topbar-title">
+                <i class="fa-solid fa-cash-register" style="color:var(--color-primary)"></i>
+                Punto de Venta
+            </span>
+            <div class="topbar-actions">
+                <input class="form-control" type="search" id="buscar-pos"
+                    placeholder="Buscar producto..." style="width:220px;">
+                <button class="btn btn-secondary btn-sm" onclick="cargarCatalogo()">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== Contenido ===== -->
+        <main class="main-content">
+            <div class="pos-layout">
+
+                <!-- Catálogo de productos -->
+                <div>
+                    <div class="catalogo-grid" id="catalogo-productos">
+                        <!-- Se renderiza con JS -->
+                        <div style="grid-column:1/-1;text-align:center;padding:2rem;">
+                            <span class="spinner"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel del carrito -->
+                <div class="carrito-panel">
+                    <div class="carrito-header">
+                        <span><i class="fa-solid fa-cart-shopping"></i> Carrito</span>
+                        <button class="btn btn-danger btn-sm" onclick="limpiarCarrito()">
+                            <i class="fa-solid fa-trash"></i> Vaciar
+                        </button>
+                    </div>
+
+                    <div class="carrito-items" id="carrito-items">
+                        <div class="carrito-vacio" id="carrito-vacio">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <p>Agrega productos al carrito</p>
+                        </div>
+                    </div>
+
+                    <div class="carrito-footer">
+                        <div class="carrito-total">
+                            <span class="total-label">TOTAL</span>
+                            <span class="total-valor" id="carrito-total">$0.00</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nota (opcional)</label>
+                            <input class="form-control" type="text" id="venta-nota"
+                                placeholder="Ej: Cliente Juan, Mesa 3...">
+                        </div>
+                        <button class="btn btn-success btn-full btn-lg" id="btn-cobrar"
+                            onclick="procesarVenta()" disabled>
+                            <i class="fa-solid fa-money-bill-wave"></i> Cobrar
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== Modal: Venta exitosa / Factura ===== -->
+    <div class="modal-overlay" id="modal-venta-ok">
+        <div class="modal" style="width: min(480px, 95vw); text-align:center;">
+            <div style="font-size:3rem;margin-bottom:var(--gap);">✅</div>
+            <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:var(--gap-xs);">¡Venta Registrada!</h2>
+            <p class="text-muted" id="venta-ok-total" style="font-size:1.2rem;margin-bottom:var(--gap-lg);"></p>
+
+            <div style="display:flex;gap:var(--gap);justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-ir-factura">
+                    <i class="fa-solid fa-print"></i> Ver e Imprimir Factura
+                </button>
+                <button class="btn btn-secondary" onclick="cerrarModalOk()">
+                    <i class="fa-solid fa-plus"></i> Nueva Venta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Modal: Historial de ventas ===== -->
+    <div class="modal-overlay" id="modal-historial">
+        <div class="modal" style="width: min(700px, 95vw);">
+            <div class="modal-header">
+                <span class="modal-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Historial de Ventas
+                </span>
+                <button class="modal-close" onclick="cerrarModal('modal-historial')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Nota</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial">
+                        <tr><td colspan="4" style="padding:1.5rem;text-align:center"><span class="spinner"></span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // ============================================================
+        // ventas.js — Punto de venta
+        // ============================================================
+
+        // Sesión: admin o caja
+        const sesion = Auth.requerirSesion(['admin', 'caja']);
+        if (sesion) {
+            const nombre = sesion.user?.email?.split('@')[0] || sesion.codigo || 'Vendedor';
+            document.getElementById('user-name').textContent = nombre;
+            document.getElementById('user-avatar').textContent = nombre[0].toUpperCase();
+            document.getElementById('user-role-label').textContent = sesion.rol === 'admin' ? 'Administrador' : 'Caja';
+
+            // Ocultar links de admin si es caja
+            if (sesion.rol === 'caja') {
+                document.getElementById('nav-dashboard-link').style.display = 'none';
+                document.getElementById('nav-inventario-link').style.display = 'none';
+            }
+        }
+
+        // ---- Estado del carrito ----
+        let carrito = [];     // [{ producto_id, nombre, precio, cantidad }]
+        let ultimaVentaId = null;
+        let productosCache = [];
+
+        // ---- Cargar catálogo ----
+        async function cargarCatalogo() {
+            const grid = document.getElementById('catalogo-productos');
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;"><span class="spinner"></span></div>`;
+
+            try {
+                const { productos } = await API.listarProductos();
+                productosCache = productos;
+                renderizarCatalogo(productos);
+            } catch (err) {
+                grid.innerHTML = `<div class="text-danger" style="padding:2rem;">Error: ${err.message}</div>`;
+            }
+        }
+
+        function renderizarCatalogo(productos) {
+            const busqueda = document.getElementById('buscar-pos').value.toLowerCase();
+            const filtrados = productos.filter(p =>
+                p.nombre.toLowerCase().includes(busqueda)
+            );
+
+            const grid = document.getElementById('catalogo-productos');
+            if (filtrados.length === 0) {
+                grid.innerHTML = `<div class="text-muted" style="grid-column:1/-1;text-align:center;padding:2rem;">
+                    No se encontraron productos.
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = filtrados.map(p => `
+                <div class="producto-card ${p.stock === 0 ? 'sin-stock' : ''}"
+                    onclick="${p.stock > 0 ? `agregarAlCarrito('${p.id}')` : ''}">
+                    <div class="producto-card-icono">🛒</div>
+                    <div class="producto-card-nombre">${p.nombre}</div>
+                    <div class="producto-card-precio">${Auth.formatearMoneda(p.precio)}</div>
+                    <div class="producto-card-stock">
+                        ${p.stock === 0
+                            ? '❌ Sin stock'
+                            : p.stock_bajo
+                                ? `⚠️ ${p.stock} en stock`
+                                : `✓ ${p.stock} en stock`}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ---- Carrito ----
+        function agregarAlCarrito(productoId) {
+            const prod = productosCache.find(p => p.id === productoId);
+            if (!prod || prod.stock === 0) return;
+
+            const existente = carrito.find(c => c.producto_id === productoId);
+            if (existente) {
+                if (existente.cantidad >= prod.stock) {
+                    Auth.mostrarToast(`No hay más stock de "${prod.nombre}".`, 'warning');
+                    return;
+                }
+                existente.cantidad++;
+            } else {
+                carrito.push({ producto_id: productoId, nombre: prod.nombre, precio: prod.precio, cantidad: 1 });
+            }
+
+            renderizarCarrito();
+        }
+
+        function cambiarCantidad(productoId, delta) {
+            const item = carrito.find(c => c.producto_id === productoId);
+            if (!item) return;
+
+            item.cantidad += delta;
+            if (item.cantidad <= 0) {
+                carrito = carrito.filter(c => c.producto_id !== productoId);
+            }
+            renderizarCarrito();
+        }
+
+        function limpiarCarrito() {
+            carrito = [];
+            renderizarCarrito();
+        }
+
+        function renderizarCarrito() {
+            const container = document.getElementById('carrito-items');
+            const vacio     = document.getElementById('carrito-vacio');
+            const btnCobrar = document.getElementById('btn-cobrar');
+            const totalEl   = document.getElementById('carrito-total');
+
+            if (carrito.length === 0) {
+                // Limpiar items pero dejar el div vacio intacto
+                const itemsList = container.querySelectorAll('.carrito-item');
+                itemsList.forEach(el => el.remove());
+                
+                vacio.style.display = 'flex';
+                btnCobrar.disabled  = true;
+                totalEl.textContent = '$0.00';
+                return;
+            }
+
+            vacio.style.display = 'none';
+            let total = 0;
+
+            // Renderizar solo los items, manteniendo el vacio oculto
+            const html = carrito.map(item => {
+                const sub = item.precio * item.cantidad;
+                total += sub;
+                return `
+                    <div class="carrito-item">
+                        <div class="carrito-item-nombre">${item.nombre}</div>
+                        <div class="carrito-item-qty">
+                            <button class="qty-btn" onclick="cambiarCantidad('${item.producto_id}', -1)">−</button>
+                            <strong>${item.cantidad}</strong>
+                            <button class="qty-btn" onclick="cambiarCantidad('${item.producto_id}', +1)">+</button>
+                        </div>
+                        <div class="carrito-item-subtotal">${Auth.formatearMoneda(sub)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Actualizar solo los items
+            const itemsExistentes = container.querySelectorAll('.carrito-item');
+            itemsExistentes.forEach(el => el.remove());
+            container.insertAdjacentHTML('beforeend', html);
+
+            totalEl.textContent = Auth.formatearMoneda(total);
+            btnCobrar.disabled = false;
+        }
+
+        // ---- Procesar venta ----
+        async function procesarVenta() {
+            if (carrito.length === 0) return;
+
+            const btn = document.getElementById('btn-cobrar');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Procesando...';
+
+            const items = carrito.map(c => ({ producto_id: c.producto_id, cantidad: c.cantidad }));
+            const nota  = document.getElementById('venta-nota').value.trim();
+            const sesionId = sesion?.sesion_id || null;
+
+            try {
+                const data = await API.registrarVenta(sesionId, items, nota);
+                ultimaVentaId = data.venta_id;
+
+                // Mostrar modal de éxito
+                document.getElementById('venta-ok-total').textContent =
+                    `Total cobrado: ${Auth.formatearMoneda(data.total)}`;
+                document.getElementById('modal-venta-ok').classList.add('open');
+                document.getElementById('btn-ir-factura').onclick = () => {
+                    window.location.href = `./factura.html?id=${ultimaVentaId}`;
+                };
+
+                // Limpiar
+                limpiarCarrito();
+                document.getElementById('venta-nota').value = '';
+                await cargarCatalogo(); // refresca stock
+            } catch (err) {
+                Auth.mostrarToast('Error al registrar venta: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> Cobrar';
+            }
+        }
+
+        function cerrarModalOk() {
+            document.getElementById('modal-venta-ok').classList.remove('open');
+        }
+
+        // ---- Historial ----
+        async function mostrarHistorial(e) {
+            if (e) e.preventDefault();
+            document.getElementById('modal-historial').classList.add('open');
+            const tbody = document.getElementById('tabla-historial');
+            tbody.innerHTML = `<tr><td colspan="4" style="padding:1.5rem;text-align:center"><span class="spinner"></span></td></tr>`;
+
+            try {
+                const { ventas } = await API.listarVentas();
+                if (ventas.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-muted" style="padding:1.5rem;text-align:center">Sin ventas registradas.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = ventas.map(v => `
+                    <tr>
+                        <td class="text-sm">${Auth.formatearFecha(v.created_at)}</td>
+                        <td><strong style="color:var(--color-success)">${Auth.formatearMoneda(v.total)}</strong></td>
+                        <td class="text-muted text-sm">${v.nota || '—'}</td>
+                        <td>
+                            <a href="./factura.html?id=${v.id}" class="btn btn-secondary btn-sm" target="_blank">
+                                <i class="fa-solid fa-print"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function cerrarModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        // Cerrar modales al click afuera
+        ['modal-venta-ok', 'modal-historial'].forEach(id => {
+            document.getElementById(id).addEventListener('click', function(e) {
+                if (e.target === this) cerrarModal(id);
+            });
+        });
+
+        // Búsqueda en tiempo real
+        document.getElementById('buscar-pos').addEventListener('input', () => {
+            renderizarCatalogo(productosCache);
+        });
+
+        // Cargar al iniciar
+        cargarCatalogo();
+    </script>
+</body>
+</html>

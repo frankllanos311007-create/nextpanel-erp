@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura — NextPanel</title>
+    <meta name="description" content="Factura de venta NextPanel. Lista para imprimir.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="../public/assets/global.css">
+    <style>
+        /* Vista en pantalla de la factura */
+        .factura-vista {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .factura-acciones {
+            display: flex;
+            gap: var(--gap);
+            margin-bottom: var(--gap-xl);
+            flex-wrap: wrap;
+        }
+
+        /* La factura imprimible tiene su propio estilo limpio */
+        .factura-contenido {
+            background: #fff;
+            color: #111;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            font-family: var(--font-main);
+        }
+
+        .factura-contenido .encabezado {
+            text-align: center;
+            border-bottom: 2px solid #111;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .factura-contenido .encabezado h1 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            color: #111;
+        }
+
+        .factura-contenido .encabezado p {
+            font-size: 0.78rem;
+            color: #555;
+            margin: 2px 0;
+        }
+
+        .factura-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .factura-info-grid .label { color: #666; }
+
+        .factura-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+        }
+
+        .factura-table th {
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #333;
+        }
+
+        .factura-table td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 12px;
+            color: #222;
+        }
+
+        .factura-table tfoot td {
+            font-weight: 700;
+            border-top: 2px solid #111;
+            background: #f9f9f9;
+        }
+
+        .factura-total-final {
+            text-align: right;
+            padding: 0.5rem 1rem;
+            font-size: 1.4rem;
+            font-weight: 900;
+            border-top: 3px double #111;
+            color: #111;
+        }
+
+        .factura-pie {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ddd;
+            font-size: 0.75rem;
+            color: #777;
+        }
+
+        /* Estado de carga / error */
+        .state-message {
+            text-align: center;
+            padding: 4rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="padding: var(--gap-xl); min-height: 100vh;">
+
+        <div class="factura-vista">
+            <!-- Acciones (no se imprimen) -->
+            <div class="factura-acciones no-print">
+                <a href="javascript:history.back()" class="btn btn-secondary">
+                    <i class="fa-solid fa-arrow-left"></i> Volver
+                </a>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> Imprimir Factura
+                </button>
+                <a href="./ventas.html" class="btn btn-secondary">
+                    <i class="fa-solid fa-plus"></i> Nueva Venta
+                </a>
+            </div>
+
+            <!-- Estado de carga -->
+            <div id="estado-carga" class="state-message">
+                <span class="spinner" style="width:40px;height:40px;border-width:3px;"></span>
+                <p class="text-muted mt">Cargando factura...</p>
+            </div>
+
+            <!-- Error -->
+            <div id="estado-error" class="state-message hidden">
+                <div style="font-size:3rem">⚠️</div>
+                <p class="text-danger mt">No se encontró la factura.</p>
+                <a href="./ventas.html" class="btn btn-secondary mt">Volver a Ventas</a>
+            </div>
+
+            <!-- Factura imprimible -->
+            <div class="factura-contenido hidden" id="factura-contenido">
+                <!-- ENCABEZADO -->
+                <div class="encabezado">
+                    <h1 id="f-negocio">MI NEGOCIO</h1>
+                    <p id="f-rif">RIF: J-XXXXXXXXX</p>
+                    <p id="f-direccion">Dirección del negocio</p>
+                    <p id="f-telefono">Teléfono: 0000-0000000</p>
+                    <p style="margin-top:8px;font-size:0.7rem;font-weight:700;color:#333">
+                        ——— FACTURA DE VENTA ———
+                    </p>
+                </div>
+
+                <!-- INFO DE LA FACTURA -->
+                <div class="factura-info-grid">
+                    <div>
+                        <span class="label">Nro. Factura: </span>
+                        <strong id="f-numero">—</strong>
+                    </div>
+                    <div>
+                        <span class="label">Fecha: </span>
+                        <strong id="f-fecha">—</strong>
+                    </div>
+                    <div>
+                        <span class="label">Vendedor: </span>
+                        <strong id="f-vendedor">—</strong>
+                    </div>
+                    <div>
+                        <span class="label">Nota: </span>
+                        <strong id="f-nota">—</strong>
+                    </div>
+                </div>
+
+                <!-- TABLA DE ITEMS -->
+                <table class="factura-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Descripción</th>
+                            <th style="text-align:center">Cant.</th>
+                            <th style="text-align:right">Precio Unit.</th>
+                            <th style="text-align:right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="f-items">
+                        <!-- Se rellena con JS -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:right;font-size:0.8rem;padding-right:12px;">
+                                TOTAL A PAGAR:
+                            </td>
+                            <td style="text-align:right;font-size:1rem;" id="f-total">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Pie de página -->
+                <div class="factura-pie">
+                    <p>¡Gracias por su compra! — Conserve esta factura como comprobante.</p>
+                    <p id="f-generada-en"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // ============================================================
+        // factura.js — Vista e impresión de facturas
+        // ============================================================
+
+        // La factura es accesible para admin y caja
+        const sesion = Auth.requerirSesion(['admin', 'caja']);
+
+        // Obtener el ID de la venta desde la URL (?id=...)
+        const params   = new URLSearchParams(window.location.search);
+        const ventaId  = params.get('id');
+
+        if (!ventaId) {
+            document.getElementById('estado-carga').classList.add('hidden');
+            document.getElementById('estado-error').classList.remove('hidden');
+        } else {
+            cargarFactura(ventaId);
+        }
+
+        async function cargarFactura(id) {
+            try {
+                const { venta } = await API.obtenerVenta(id);
+                renderizarFactura(venta);
+            } catch (err) {
+                document.getElementById('estado-carga').classList.add('hidden');
+                document.getElementById('estado-error').classList.remove('hidden');
+            }
+        }
+
+        function renderizarFactura(venta) {
+            // Ocultar loader
+            document.getElementById('estado-carga').classList.add('hidden');
+            document.getElementById('factura-contenido').classList.remove('hidden');
+
+            // Número de factura (primeros 8 chars del UUID)
+            document.getElementById('f-numero').textContent = venta.id.substring(0, 8).toUpperCase();
+            document.getElementById('f-fecha').textContent  = Auth.formatearFecha(venta.created_at);
+            document.getElementById('f-vendedor').textContent = sesion?.user?.email?.split('@')[0]
+                || sesion?.codigo || 'Sistema';
+            document.getElementById('f-nota').textContent   = venta.nota || '—';
+            document.getElementById('f-total').textContent  = Auth.formatearMoneda(venta.total);
+            document.getElementById('f-generada-en').textContent =
+                `Factura generada el ${Auth.formatearFecha(new Date().toISOString())}`;
+
+            // Título del documento para impresión
+            document.title = `Factura #${venta.id.substring(0, 8).toUpperCase()} — NextPanel`;
+
+            // Items
+            const tbody = document.getElementById('f-items');
+            tbody.innerHTML = venta.items.map((item, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${item.nombre}</td>
+                    <td style="text-align:center">${item.cantidad}</td>
+                    <td style="text-align:right">${Auth.formatearMoneda(item.precio_unitario)}</td>
+                    <td style="text-align:right"><strong>${Auth.formatearMoneda(item.subtotal)}</strong></td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

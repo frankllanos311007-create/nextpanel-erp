@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario — NextPanel</title>
+    <meta name="description" content="Gestión de inventario de productos. Crear, editar y controlar stock.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="../public/assets/global.css">
+</head>
+
+<body>
+    <div class="app-layout">
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">⚡</div>
+                <span>NextPanel</span>
+            </div>
+            <span class="nav-section-label">Principal</span>
+            <a href="./dashboard.html" class="nav-link" id="nav-dashboard">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+            <span class="nav-section-label">Gestión</span>
+            <a href="./inventario.html" class="nav-link active">
+                <i class="fa-solid fa-boxes-stacked"></i> Inventario
+            </a>
+            <a href="./ventas.html" class="nav-link">
+                <i class="fa-solid fa-cash-register"></i> Ventas
+            </a>
+            <span class="nav-section-label">Sistema</span>
+            <a href="./dashboard.html#sesiones" class="nav-link">
+                <i class="fa-solid fa-key"></i> Códigos de Acceso
+            </a>
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <div class="avatar" id="user-avatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="user-name">Admin</div>
+                        <div class="user-role">Administrador</div>
+                    </div>
+                    <button class="btn btn-sm" onclick="Auth.cerrarSesion()" title="Cerrar sesión"
+                        style="background:none;border:none;color:var(--text-muted);">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===== Topbar ===== -->
+        <header class="topbar">
+            <span class="topbar-title">
+                <i class="fa-solid fa-boxes-stacked" style="color:var(--color-primary)"></i>
+                Inventario
+            </span>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="abrirModalProducto()">
+                    <i class="fa-solid fa-plus"></i> Nuevo Producto
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== Contenido ===== -->
+        <main class="main-content">
+
+            <!-- Filtros y búsqueda -->
+            <div class="card mb" style="padding: var(--gap);">
+                <div style="display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;">
+                        <input class="form-control" type="search" id="buscar-producto"
+                            placeholder="🔍  Buscar producto por nombre...">
+                    </div>
+                    <label style="display:flex;align-items:center;gap:var(--gap-sm);font-size:0.875rem;color:var(--text-secondary);cursor:pointer;">
+                        <input type="checkbox" id="filtro-alerta" onchange="cargarProductos()">
+                        Solo stock bajo
+                    </label>
+                    <button class="btn btn-secondary btn-sm" onclick="cargarProductos()">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de productos -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+                        <i class="fa-solid fa-list"></i> Lista de Productos
+                    </span>
+                    <span id="total-productos" class="text-sm text-muted">Cargando...</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Stock Mín.</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-productos">
+                            <tr>
+                                <td colspan="6" style="text-align:center;padding:2rem;">
+                                    <span class="spinner"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ===== Modal: Crear/Editar Producto ===== -->
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-producto-titulo">
+                    <i class="fa-solid fa-box"></i> Nuevo Producto
+                </span>
+                <button class="modal-close" onclick="cerrarModal('modal-producto')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="form-producto" novalidate>
+                <input type="hidden" id="producto-id">
+
+                <div class="form-group">
+                    <label class="form-label" for="producto-nombre">Nombre del producto *</label>
+                    <input class="form-control" type="text" id="producto-nombre"
+                        placeholder="Ej: Coca-Cola 600ml" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="producto-precio">Precio ($) *</label>
+                        <input class="form-control" type="number" id="producto-precio"
+                            placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="producto-stock">Stock actual *</label>
+                        <input class="form-control" type="number" id="producto-stock"
+                            placeholder="0" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="producto-stock-min">
+                        Stock mínimo (alerta de stock bajo)
+                    </label>
+                    <input class="form-control" type="number" id="producto-stock-min"
+                        placeholder="5" min="0" value="5">
+                </div>
+
+                <div id="form-producto-error" class="hidden"></div>
+
+                <div style="display:flex;gap:var(--gap);justify-content:flex-end;margin-top:var(--gap-lg);">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarModal('modal-producto')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-guardar-producto">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación -->
+    <div class="modal-overlay" id="modal-eliminar">
+        <div class="modal" style="width: min(380px, 95vw);">
+            <div class="modal-header">
+                <span class="modal-title text-danger">
+                    <i class="fa-solid fa-trash"></i> Eliminar Producto
+                </span>
+                <button class="modal-close" onclick="cerrarModal('modal-eliminar')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p style="margin-bottom:var(--gap-lg);">
+                ¿Estás seguro de que deseas eliminar <strong id="eliminar-nombre"></strong>?
+                Esta acción no se puede deshacer fácilmente.
+            </p>
+            <div style="display:flex;gap:var(--gap);justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="cerrarModal('modal-eliminar')">Cancelar</button>
+                <button class="btn btn-danger" id="btn-confirmar-eliminar">
+                    <i class="fa-solid fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // ============================================================
+        // inventario.js — Lógica del módulo de inventario
+        // ============================================================
+
+        const sesion = Auth.requerirSesion(['admin']);
+        if (sesion) {
+            const email = sesion.user?.email || sesion.email || 'Admin';
+            document.getElementById('user-name').textContent = email.split('@')[0];
+            document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+        }
+
+        let productosCache = [];
+
+        // ---- Cargar y renderizar productos ----
+        async function cargarProductos() {
+            const soloAlertas = document.getElementById('filtro-alerta').checked;
+            const tbody = document.getElementById('tabla-productos');
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;"><span class="spinner"></span></td></tr>`;
+
+            try {
+                const { productos } = await API.listarProductos(soloAlertas);
+                productosCache = productos;
+                renderizarProductos(productos);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-danger" style="padding:1.5rem;text-align:center">
+                    Error: ${err.message}
+                </td></tr>`;
+            }
+        }
+
+        function renderizarProductos(productos) {
+            const busqueda = document.getElementById('buscar-producto').value.toLowerCase();
+            const filtrados = productos.filter(p =>
+                p.nombre.toLowerCase().includes(busqueda)
+            );
+
+            document.getElementById('total-productos').textContent =
+                `${filtrados.length} producto${filtrados.length !== 1 ? 's' : ''}`;
+
+            const tbody = document.getElementById('tabla-productos');
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-sm" style="text-align:center;padding:2rem;">
+                    No se encontraron productos.
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtrados.map(p => `
+                <tr>
+                    <td><strong>${p.nombre}</strong></td>
+                    <td>${Auth.formatearMoneda(p.precio)}</td>
+                    <td>
+                        <span class="badge ${p.stock_bajo ? 'badge-danger' : 'badge-success'}">
+                            ${p.stock}
+                        </span>
+                    </td>
+                    <td class="text-muted">${p.stock_minimo}</td>
+                    <td>
+                        ${p.stock_bajo
+                            ? '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Stock Bajo</span>'
+                            : '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Normal</span>'
+                        }
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:var(--gap-sm);">
+                            <button class="btn btn-secondary btn-sm" onclick="abrirModalEditar('${p.id}')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmarEliminar('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ---- Modal Crear ----
+        function abrirModalProducto() {
+            limpiarFormulario();
+            document.getElementById('modal-producto-titulo').innerHTML =
+                '<i class="fa-solid fa-box"></i> Nuevo Producto';
+            document.getElementById('modal-producto').classList.add('open');
+            document.getElementById('producto-nombre').focus();
+        }
+
+        // ---- Modal Editar ----
+        function abrirModalEditar(id) {
+            const p = productosCache.find(p => p.id === id);
+            if (!p) return;
+            document.getElementById('producto-id').value      = p.id;
+            document.getElementById('producto-nombre').value  = p.nombre;
+            document.getElementById('producto-precio').value  = p.precio;
+            document.getElementById('producto-stock').value   = p.stock;
+            document.getElementById('producto-stock-min').value = p.stock_minimo;
+            document.getElementById('modal-producto-titulo').innerHTML =
+                '<i class="fa-solid fa-pen"></i> Editar Producto';
+            document.getElementById('modal-producto').classList.add('open');
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('producto-id').value      = '';
+            document.getElementById('producto-nombre').value  = '';
+            document.getElementById('producto-precio').value  = '';
+            document.getElementById('producto-stock').value   = '';
+            document.getElementById('producto-stock-min').value = 5;
+            document.getElementById('form-producto-error').className = 'hidden';
+        }
+
+        function cerrarModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        // ---- Guardar producto ----
+        document.getElementById('form-producto').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorEl = document.getElementById('form-producto-error');
+            errorEl.className = 'hidden';
+
+            const id     = document.getElementById('producto-id').value;
+            const nombre = document.getElementById('producto-nombre').value.trim();
+            const precio = document.getElementById('producto-precio').value;
+            const stock  = document.getElementById('producto-stock').value;
+            const stock_minimo = document.getElementById('producto-stock-min').value;
+
+            if (!nombre || precio === '' || stock === '') {
+                errorEl.className = 'alert alert-danger';
+                errorEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Completa todos los campos requeridos.';
+                return;
+            }
+
+            const btn = document.getElementById('btn-guardar-producto');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+            try {
+                if (id) {
+                    await API.editarProducto(id, { nombre, precio, stock, stock_minimo });
+                    Auth.mostrarToast(`"${nombre}" actualizado correctamente.`, 'success');
+                } else {
+                    await API.crearProducto({ nombre, precio, stock, stock_minimo });
+                    Auth.mostrarToast(`"${nombre}" creado correctamente.`, 'success');
+                }
+                cerrarModal('modal-producto');
+                await cargarProductos();
+            } catch (err) {
+                errorEl.className = 'alert alert-danger';
+                errorEl.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
+            }
+        });
+
+        // ---- Eliminar producto ----
+        let idEliminar = null;
+
+        function confirmarEliminar(id, nombre) {
+            idEliminar = id;
+            document.getElementById('eliminar-nombre').textContent = nombre;
+            document.getElementById('modal-eliminar').classList.add('open');
+        }
+
+        document.getElementById('btn-confirmar-eliminar').addEventListener('click', async () => {
+            if (!idEliminar) return;
+            try {
+                await API.eliminarProducto(idEliminar);
+                Auth.mostrarToast('Producto eliminado.', 'success');
+                cerrarModal('modal-eliminar');
+                await cargarProductos();
+            } catch (err) {
+                Auth.mostrarToast('Error: ' + err.message, 'error');
+            }
+        });
+
+        // ---- Búsqueda en tiempo real ----
+        document.getElementById('buscar-producto').addEventListener('input', () => {
+            renderizarProductos(productosCache);
+        });
+
+        // Cerrar modales al click afuera
+        ['modal-producto', 'modal-eliminar'].forEach(id => {
+            document.getElementById(id).addEventListener('click', function(e) {
+                if (e.target === this) cerrarModal(id);
+            });
+        });
+
+        // Cargar al iniciar
+        cargarProductos();
+    </script>
+</body>
+</html>

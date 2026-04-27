@@ -1,0 +1,295 @@
+:root {
+    --bg: #FFFFFF;
+    --surface: #F8FAFC;
+    --text: #0F172A;
+    --muted: #475569;
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --accent: #38BDF8;
+    --border: #E2E8F0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    scroll-margin-top: 120px;
+}
+
+body {
+    background-color: #FFFFFF;
+    color: #0F172A;
+    font-family: 'Poppins', sans-serif;
+}
+
+header {
+    top: 0;
+    z-index: 100;
+    position: sticky;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px 30px;
+    background-color: #1D4ED8;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 3rem;
+    color: #FFFFFF;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn {
+    font-size: 1.3rem;
+    color: #FFFFFF;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.btn:hover {
+    color: #38BDF8;
+}
+
+.Iniciar-Sesion {
+    padding: 12px;
+    background-color: #47556965;
+    font-size: 1.3rem;
+    color: #FFFFFF;
+    text-decoration: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.Iniciar-Sesion:hover {
+    background-color: #95a5bb79;
+}
+
+.Hero {
+    display: flex;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, #020024, #2563EB);
+    padding: 60px 40px;
+    color: #FFFFFF;
+}
+
+.Hero h1 {
+    font-size: 3rem;
+    max-width: 600px;
+    margin: 20px 0;
+    line-height: 1;
+}
+
+.Hero p {
+    font-size: 2rem;
+    margin: 10px 0;
+    line-height: 1.1;
+}
+
+.Hero div {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
+}
+
+.Hero a {
+    color: #FFFFFF;
+    text-decoration: none;
+    background-color: #47556977;
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    font-size: 1.3rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.Hero a:hover {
+    background-color: #95a5bb79;
+}
+
+.section {
+    padding: 40px 40px;
+    background-color: #F8FAFC;
+}
+
+.section:nth-child(even) {
+    background-color: #FFFFFF;
+}
+
+.section h1 {
+    text-align: center;
+    font-size: 2.3rem;
+}
+
+section h2 {
+    margin-top: 30px;
+    text-align: left;
+    font-size: 2rem;
+}
+
+section h3 {
+    margin-top: 10px;
+    font-size: 1.6rem;
+}
+
+section p {
+    text-align: justify;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.lista {
+    margin: 40px 60px;
+    padding: 20px;
+    justify-items: center;
+    background-color: #FFFFFF;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+}
+
+.lista li {
+    font-size: 1.5rem;
+    margin: 10px 0;
+}
+
+.lista p {
+    margin-top: 10px;
+    font-size: 1.8rem;
+}
+
+.section-unete {
+    display: flex;
+    flex-wrap: wrap;
+    background: #020024;
+    background: linear-gradient(352deg, rgba(2, 0, 36, 1) 5%, rgba(29, 78, 216, 1) 67%, rgba(56, 189, 248, 1) 100%);
+    color: #FFFFFF;
+    padding: 80px 0px;
+    justify-content: center;
+    clip-path: polygon(0 14%, 100% 0, 100% 82%, 0% 100%);
+}
+
+.section-unete h1 {
+    font-size: 3rem;
+}
+
+.section-unete p {
+    text-align: center;
+    font-size: 1.8rem;
+}
+
+.section-unete div {
+    display: flex;
+    justify-content: center;
+    margin: 20px 10px;
+    gap: 30px;
+}
+
+.section-unete a {
+    text-align: center;
+    width: 250px;
+    padding: 15px;
+    background-color: #47556977;
+    color: #FFFFFF;
+    font-size: 1.3rem;
+    text-decoration: none;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.section-unete a:hover {
+    background-color: #95a5bb79;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 1.3rem;
+    line-height: 1.6;
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.card {
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    padding: 30px 20px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: default;
+}
+
+.card i {
+    font-size: 3rem;
+    color: #2563EB;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #0F172A;
+}
+
+.card p {
+    font-size: 1.1rem;
+    color: #475569;
+    line-height: 1.5;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+}
+
+.section-contacto {
+    margin: 40px 60px;
+    padding: 20px;
+    justify-items: center;
+    background-color: #FFFFFF;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+}
+
+.section-contacto h1 {
+    font-size: 2.3rem;
+}
+
+.section-contacto p {
+    font-size: 1.3rem;
+}
+
+.section-contacto div {
+    text-align: justify;
+}
+
+.section-contacto a {
+    text-decoration: none;
+    color: #2563EB;
+}
+
+footer {
+    padding: 20px 30px;
+    text-align: center;
+    color: #FFFFFF;
+    background: #1D4ED8;
+}
+
+footer h1 {
+    font-size: 1.8rem;
+}

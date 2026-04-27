@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso — NextPanel</title>
+    <meta name="description" content="Inicia sesión en NextPanel, el sistema ERP para tu negocio.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="../public/assets/global.css">
+    <link rel="stylesheet" href="../public/assets/auth.css">
+</head>
+
+<body>
+    <!-- ===== Auth Card ===== -->
+    <div class="auth-card">
+
+        <!-- Logo -->
+        <div class="auth-logo">
+            <div class="auth-logo-icon">⚡</div>
+            <h1>NextPanel</h1>
+            <p>Sistema de Gestión para Negocios</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="auth-tabs" role="tablist">
+            <button class="auth-tab active" id="tab-admin" onclick="cambiarTab('admin')" role="tab">
+                <i class="fa-solid fa-shield-halved"></i> Admin
+            </button>
+            <button class="auth-tab" id="tab-caja" onclick="cambiarTab('caja')" role="tab">
+                <i class="fa-solid fa-cash-register"></i> Vendedor
+            </button>
+        </div>
+
+        <!-- Sección Admin -->
+        <div class="auth-section active" id="section-admin">
+            <p class="auth-section-title">Acceso Administrador</p>
+            <p class="auth-section-subtitle">Ingresa con tu correo y contraseña de administrador.</p>
+
+            <form id="form-admin" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="admin-email">
+                        <i class="fa-solid fa-envelope"></i> Correo Electrónico
+                    </label>
+                    <input class="form-control" type="email" id="admin-email"
+                        placeholder="admin@tunegocio.com" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="admin-password">
+                        <i class="fa-solid fa-lock"></i> Contraseña
+                    </label>
+                    <input class="form-control" type="password" id="admin-password"
+                        placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+
+                <div id="auth-error" class="hidden"></div>
+
+                <button type="submit" class="btn btn-primary btn-full btn-lg mt" id="btn-admin-login">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+        </div>
+
+        <!-- Sección Vendedor / Caja -->
+        <div class="auth-section" id="section-caja">
+            <p class="auth-section-title">Acceso Vendedor</p>
+            <p class="auth-section-subtitle">Ingresa el código temporal que te proporcionó el administrador.</p>
+
+            <form id="form-caja" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="caja-codigo">
+                        <i class="fa-solid fa-key"></i> Código de Acceso
+                    </label>
+                    <input class="form-control code-input" type="text" id="caja-codigo"
+                        placeholder="ABC123" maxlength="6" autocomplete="off" required>
+                    <span class="code-hint">6 caracteres — proporcionado por el administrador</span>
+                </div>
+
+                <div id="caja-error" class="hidden"></div>
+
+                <button type="submit" class="btn btn-primary btn-full btn-lg mt" id="btn-caja-login">
+                    <i class="fa-solid fa-store"></i> Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+
+    </div><!-- /auth-card -->
+
+    <!-- Scripts (orden importante: auth primero, luego api, luego lógica) -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // ============================================================
+        // Lógica de la página de autenticación
+        // ============================================================
+
+        /** Cambiar entre tab Admin y Caja */
+        function cambiarTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-section').forEach(s => s.classList.remove('active'));
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`section-${tab}`).classList.add('active');
+
+            // Limpiar errores
+            ocultarError('auth-error');
+            ocultarError('caja-error');
+        }
+
+        function mostrarError(id, msg) {
+            const el = document.getElementById(id);
+            el.className = 'alert alert-danger';
+            el.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${msg}`;
+        }
+
+        function ocultarError(id) {
+            const el = document.getElementById(id);
+            if (el) { el.className = 'hidden'; el.textContent = ''; }
+        }
+
+        function setBtnLoading(id, loading) {
+            const btn = document.getElementById(id);
+            if (loading) {
+                btn.classList.add('btn-loading');
+                btn.innerHTML = '<span class="spinner"></span> Verificando...';
+                btn.disabled = true;
+            } else {
+                btn.disabled = false;
+            }
+        }
+
+        // ---- Login Admin ----
+        document.getElementById('form-admin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            ocultarError('auth-error');
+
+            const email    = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+
+            if (!email || !password) {
+                return mostrarError('auth-error', 'Completa todos los campos.');
+            }
+
+            setBtnLoading('btn-admin-login', true);
+            try {
+                const data = await API.adminLogin(email, password);
+                Auth.guardarSesion({ ...data, email });
+                window.location.href = './dashboard.html';
+            } catch (err) {
+                mostrarError('auth-error', err.message);
+                // Restaurar botón
+                const btn = document.getElementById('btn-admin-login');
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión';
+            }
+        });
+
+        // ---- Login Vendedor (código) ----
+        document.getElementById('form-caja').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            ocultarError('caja-error');
+
+            const codigo = document.getElementById('caja-codigo').value.trim().toUpperCase();
+
+            if (!codigo || codigo.length !== 6) {
+                return mostrarError('caja-error', 'El código debe tener 6 caracteres.');
+            }
+
+            setBtnLoading('btn-caja-login', true);
+            try {
+                const data = await API.validarCodigo(codigo);
+                Auth.guardarSesion({ ...data, codigo });
+                window.location.href = './ventas.html';
+            } catch (err) {
+                mostrarError('caja-error', err.message);
+                const btn = document.getElementById('btn-caja-login');
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-store"></i> Ingresar al Sistema';
+            }
+        });
+
+        // Formatear automáticamente el código en mayúsculas
+        document.getElementById('caja-codigo').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Si ya hay sesión activa, redirigir
+        const sesionActiva = Auth.obtenerSesion();
+        if (sesionActiva) {
+            window.location.href = sesionActiva.rol === 'admin'
+                ? './dashboard.html'
+                : './ventas.html';
+        }
+    </script>
+</body>
+
+</html>
