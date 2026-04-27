@@ -3,8 +3,10 @@
 // Todas las peticiones al backend pasan por aquí
 // ============================================================
 
-// URL base del backend (ajustar según entorno)
-const API_BASE = 'http://localhost:3001/api';
+// URL base del backend (relativa para Vercel/Producción)
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001/api'
+    : '/api';
 
 // -------- Helpers --------
 

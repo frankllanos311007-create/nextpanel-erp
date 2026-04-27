@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3001;
 app.use(compression());
 app.use(cors({
     // En producción cambia esto al dominio real de tu frontend
-    origin: ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000'],
+    origin: '*', // Permitir todas las conexiones en esta fase de despliegue
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
