@@ -10,9 +10,9 @@ Sistema web completo de gestión empresarial con inventario, punto de venta, fac
 |------|-----------|
 | Frontend | HTML + CSS Vanilla + JavaScript puro |
 | Backend | Node.js + Express |
-| Base de Datos | Supabase (PostgreSQL) |
-| Auth Admin | Supabase Auth (email/password) |
-| Auth Vendedor | Código temporal personalizado |
+| Base de Datos | Firebase Firestore |
+| Auth Admin | Admin Password (vía .env) |
+| Auth Vendedor | Código temporal personalizado (Firestore) |
 
 ---
 
@@ -38,31 +38,22 @@ NextPanel/
 │   ├── .env.example           ← Plantilla de variables de entorno
 │   └── src/
 │       ├── index.js           ← Servidor Express
-│       ├── routes/
-│       │   ├── authRoutes.js
-│       │   ├── productosRoutes.js
-│       │   ├── ventasRoutes.js
-│       │   └── dashboardRoutes.js
-│       ├── controllers/
-│       │   ├── authController.js
-│       │   ├── productosController.js
-│       │   ├── ventasController.js
-│       │   └── dashboardController.js
+│       ├── routes/            ← Rutas de la API
+│       ├── controllers/       ← Lógica de negocio (Firestore)
 │       └── services/
-│           └── supabaseClient.js  ← Conexión a Supabase
-└── supabase/
-    └── schema.sql             ← DDL completo (tablas, índices, RLS)
+│           └── firebaseAdmin.js ← Conexión a Firebase (Admin SDK)
+└── vercel.json                ← Configuración de despliegue
 ```
 
 ---
 
 ## ⚙️ Instalación y Configuración
 
-### 1. Configurar Supabase
+### 1. Configurar Firebase
 
-1. Crea un proyecto en [supabase.com](https://supabase.com)
-2. Ve a **SQL Editor** y ejecuta el contenido de `supabase/schema.sql`
-3. En **Authentication → Users**, crea tu usuario admin
+1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/).
+2. Habilita **Firestore Database**.
+3. Ve a **Project Settings -> Service Accounts** y genera una nueva clave privada (archivo JSON).
 
 ### 2. Configurar el Backend
 
@@ -74,107 +65,29 @@ npm install
 copy .env.example .env
 ```
 
-Edita el `.env` con tus credenciales de Supabase:
+Edita el `.env` con tus credenciales:
 
 ```env
-SUPABASE_URL=https://TU_PROYECTO.supabase.co
-SUPABASE_SERVICE_KEY=tu_service_role_key
+# Ruta al archivo JSON de Firebase (o contenido JSON en Vercel)
+FIREBASE_SERVICE_ACCOUNT={"type": "service_account", ...}
 PORT=3001
 ADMIN_EMAIL=admin@tunegocio.com
+ADMIN_PASSWORD=tu_password_segura
 ```
-
-### 3. Iniciar el servidor
-
-```bash
-# Desarrollo (con auto-reload)
-npm run dev
-
-# Producción
-npm start
-```
-
-El servidor corre en: `http://localhost:3001`
-
-### 4. Abrir el Frontend
-
-Abre `frontend/pages/auth.html` con un servidor local (ej: Live Server de VS Code) o sirve la carpeta `frontend/` con cualquier servidor estático.
-
-> ⚠️ **No abras los HTML directamente con `file://`** — los fetch() necesitan un servidor HTTP.
 
 ---
 
-## 🔐 Sistema de Autenticación
+## 🔐 Seguridad y Autenticación
 
 ### Login Admin
-- Ve a `auth.html` → pestaña **Admin**
-- Ingresa email + contraseña del usuario Supabase
-- Accedes al Dashboard completo
+- El acceso se valida contra las variables de entorno `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
+- No requiere base de datos para el login, lo que lo hace más rápido y simple de configurar.
 
 ### Login Vendedor (Código)
-1. El admin va a **Dashboard → Códigos de Acceso**
-2. Genera un código indicando la duración (horas)
-3. El sistema genera un código de 6 letras (ej: `AB3X7K`)
-4. El vendedor ingresa en `auth.html` → pestaña **Vendedor**
-5. El sistema valida: existencia ✓ estado activo ✓ no expirado ✓
+1. El admin genera un código desde el Dashboard (ej: `AB3X7K`).
+2. El código se guarda en Firestore con una duración limitada (ej: 8 horas).
+3. El sistema valida: existencia ✓ estado activo ✓ no expirado ✓
 
----
-
-## 📊 Módulos
-
-| Módulo | Acceso | Funcionalidad |
-|--------|--------|--------------|
-| **Dashboard** | Admin | Ventas del día, total, top productos, alertas stock |
-| **Inventario** | Admin | CRUD productos, alertas stock bajo |
-| **Ventas (POS)** | Admin + Caja | Catálogo visual, carrito, cobro, historial |
-| **Factura** | Admin + Caja | Factura HTML imprimible con `window.print()` |
-| **Códigos de Acceso** | Admin | Generar/desactivar códigos temporales para vendedores |
-
----
-
-## 🗄️ Base de Datos
-
-```sql
-productos        → id, nombre, precio, stock, stock_minimo, activo
-sesiones         → id, codigo, rol, expira_en, activo, creado_por
-ventas           → id, total, sesion_id, nota, created_at
-detalle_ventas   → id, venta_id, producto_id, cantidad, precio_unitario, subtotal
-```
-
----
-
-## 🖨️ Facturas
-
-Las facturas se generan en HTML y se imprimen con `window.print()`.
-El CSS define `@media print` que oculta la navegación y aplica estilos de impresión limpios.
-
-**Para personalizar la factura**, edita en `factura.html`:
-```html
-<h1 id="f-negocio">MI NEGOCIO</h1>
-<p id="f-rif">RIF: J-XXXXXXXXX</p>
-<p id="f-direccion">Dirección del negocio</p>
-<p id="f-telefono">Teléfono: 0000-0000000</p>
-```
-
----
-
-## 🔗 Endpoints del API
-
-```
-GET    /                              → Health check
-POST   /api/auth/admin-login          → Login admin
-POST   /api/auth/validar-codigo       → Validar código vendedor
-POST   /api/auth/generar-codigo       → Generar código (admin)
-GET    /api/auth/sesiones             → Listar códigos
-PATCH  /api/auth/sesiones/:id/toggle  → Activar/desactivar código
-
-GET    /api/productos                 → Listar productos
-POST   /api/productos                 → Crear producto
-PUT    /api/productos/:id             → Editar producto
-DELETE /api/productos/:id             → Eliminar (lógico)
-
-GET    /api/ventas                    → Historial de ventas
-POST   /api/ventas                    → Registrar venta + descontar stock
-GET    /api/ventas/:id                → Detalle de venta (para factura)
-
-GET    /api/dashboard                 → Estadísticas del día
-```
+### Seguridad de Datos
+- **Arquitectura:** El frontend nunca se comunica directamente con Firebase. Todo pasa por el Backend (Node.js).
+- **Service Account:** El backend utiliza el SDK de Administración de Firebase, lo que garantiza que solo el servidor tiene permisos para modificar datos sensibles.
